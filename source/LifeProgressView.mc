@@ -29,7 +29,7 @@ class LifeProgressView extends WatchUi.WatchFace {
     function onUpdate(dc) {
         var batteryView = View.findDrawableById("BatteryLabel");        
         var myStats = System.getSystemStats();
-        var batteryLeft = Math.round(myStats.battery);
+        var batteryLeft = Math.round(myStats.battery).toLong();
         var batteryLeftString = Lang.format("battery $1$%", [batteryLeft]);
         
         if (batteryLeft <= 10) {
