@@ -12,9 +12,6 @@ class LifeProgressView extends WatchUi.WatchFace {
 	var totalDays = 365;
 	var daysInMonth = [31,28,31,30,31,30,31,31,30,31,30,31]; 
 	var maxAge = 80;
-	var batteryThreshold5 = 5;
-    var batteryThreshold10 = 10;
-    var batteryThreshold20 = 20;
     
     function initialize() {
         WatchFace.initialize();
@@ -32,18 +29,17 @@ class LifeProgressView extends WatchUi.WatchFace {
     function onUpdate(dc) {
         var batteryView = View.findDrawableById("BatteryLabel");        
         var myStats = System.getSystemStats();
-        var batteryLeft = 3;//Math.round(myStats.battery);
-        if (batteryLeft <= batteryThreshold5) {
-	        var batteryView = View.findDrawableById("BatteryLabel5");
-	        var batteryLeftString = Lang.format("BATTERY ~5%", []);
+        var batteryLeft = Math.round(myStats.battery);
+        var batteryLeftString = Lang.format("battery $1$%", [batteryLeft]);
+        
+        if (batteryLeft <= 10) {
+	        batteryView.setColor(Graphics.COLOR_RED);
         	batteryView.setText(batteryLeftString);
-        } else if (batteryLeft <= batteryThreshold10) {
-	        var batteryView = View.findDrawableById("BatteryLabel10");
-	        var batteryLeftString = Lang.format("battery ~10%", []);
+        } else if (batteryLeft <= 20) {
+	        batteryView.setColor(Graphics.COLOR_LT_GRAY);
         	batteryView.setText(batteryLeftString);
-        } else if (batteryLeft <= batteryThreshold20) {
-	        var batteryView = View.findDrawableById("BatteryLabel20");
-	        var batteryLeftString = Lang.format("battery ~20%", []);
+        } else if (batteryLeft <= 25) {
+	        batteryView.setColor(Graphics.COLOR_DK_GRAY);
         	batteryView.setText(batteryLeftString);
         }
 
@@ -58,16 +54,12 @@ class LifeProgressView extends WatchUi.WatchFace {
         var timeLabelView = View.findDrawableById("TimeLabel");
         timeLabelView.setText(timeString);
 
-        var daysInYearView = View.findDrawableById("DayInYearLabel");
-        var dayOfYear = getDayOfYear();
-        var dayOfYearPercent = Math.round(100 * dayOfYear / totalDays);
-        var dayNumber = Lang.format("year $1$%", [dayOfYearPercent]);
-        daysInYearView.setText(dayNumber);
-        
-        var lifePercent = getLifeProgress();
-        var yearsInLifeView = View.findDrawableById("YearInLifeLabel");		
-        var ageProgress = Lang.format("life $1$%", [lifePercent]);
-        yearsInLifeView.setText(ageProgress);
+        var daysInYearView = View.findDrawableById("ProgressLabel");
+        if(clockTime.min == 59) {
+        	daysInYearView.setText(getLifeProgress());
+        } else {
+        	daysInYearView.setText(getDayOfYear());
+        }        
 
         // Call the parent onUpdate function to redraw the layout
         View.onUpdate(dc);
@@ -77,16 +69,18 @@ class LifeProgressView extends WatchUi.WatchFace {
 		var profile = UserProfile.getProfile();
 		var birthYear = profile.birthYear;
         var day = Gregorian.info(new Time.Moment(Time.today().value()), Time.Time.FORMAT_MEDIUM);
-		return 100 * (day.year - birthYear) / maxAge;
+		var percents = 100 * (day.year - birthYear) / maxAge;		
+        return Lang.format("life $1$%", [percents]);
 	}
 
 	function getDayOfYear() {
 	    var dayShort = Gregorian.info(new Time.Moment(Time.today().value()), Time.FORMAT_SHORT);
-	    var result = dayShort.day;
+	    var daysPassed = dayShort.day;
         for(var i = 0; i < dayShort.month - 1; i += 1) {
-			result = result + daysInMonth[i];
+			daysPassed = daysPassed + daysInMonth[i];
 		}
-    	return result;
+		var dayOfYearPercent = Math.round(100 * daysPassed / totalDays);
+        return Lang.format("year $1$%", [dayOfYearPercent]);
     }
     
     // Called when this View is removed from the screen. Save the
